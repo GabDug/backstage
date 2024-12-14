@@ -1,5 +1,25 @@
 # @backstage/plugin-kubernetes-backend
 
+## 0.19.1-next.3
+
+### Patch Changes
+
+- 928db6a: Support fetch pod metrics with custom resources
+- Updated dependencies
+  - @backstage/plugin-kubernetes-node@0.2.1-next.2
+  - @backstage/backend-plugin-api@1.1.0-next.2
+  - @backstage/catalog-client@1.9.0-next.2
+  - @backstage/catalog-model@1.7.2-next.0
+  - @backstage/config@1.3.1-next.0
+  - @backstage/errors@1.2.6-next.0
+  - @backstage/integration-aws-node@0.1.14-next.0
+  - @backstage/types@1.2.0
+  - @backstage/plugin-auth-node@0.5.5-next.2
+  - @backstage/plugin-catalog-node@1.15.0-next.2
+  - @backstage/plugin-kubernetes-common@0.9.1-next.0
+  - @backstage/plugin-permission-common@0.8.3-next.0
+  - @backstage/plugin-permission-node@0.8.6-next.2
+
 ## 0.19.1-next.2
 
 ### Patch Changes

@@ -1,5 +1,20 @@
 # @backstage/plugin-scaffolder-backend-module-github
 
+## 0.5.4-next.3
+
+### Patch Changes
+
+- b5e002b: Change `github:environment:create` action to request and use a token when resolving reviewer entity refs from the Backstage catalog.
+- 973dd6f: Minor spell fix in action parameters
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.1.0-next.2
+  - @backstage/catalog-client@1.9.0-next.2
+  - @backstage/catalog-model@1.7.2-next.0
+  - @backstage/config@1.3.1-next.0
+  - @backstage/errors@1.2.6-next.0
+  - @backstage/integration@1.16.0-next.1
+  - @backstage/plugin-scaffolder-node@0.6.2-next.2
+
 ## 0.5.4-next.2
 
 ### Patch Changes

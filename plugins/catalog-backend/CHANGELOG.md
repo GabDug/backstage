@@ -1,5 +1,29 @@
 # @backstage/plugin-catalog-backend
 
+## 1.29.0-next.3
+
+### Minor Changes
+
+- 02bd2cb: Added a new `catalog.disableRelationsCompatibility` configuration option that avoids JSON deserialization and serialization if possible when reading entities. This significantly reduces the memory usage of the catalog, and slightly increases performance, but it removes the backwards compatibility processing that ensures that both `entity.relation[].target` and `entity.relation[].targetRef` are present in returned entities.
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-openapi-utils@0.4.0-next.2
+  - @backstage/backend-plugin-api@1.1.0-next.2
+  - @backstage/catalog-client@1.9.0-next.2
+  - @backstage/catalog-model@1.7.2-next.0
+  - @backstage/config@1.3.1-next.0
+  - @backstage/errors@1.2.6-next.0
+  - @backstage/integration@1.16.0-next.1
+  - @backstage/types@1.2.0
+  - @backstage/plugin-catalog-common@1.1.2-next.0
+  - @backstage/plugin-catalog-node@1.15.0-next.2
+  - @backstage/plugin-events-node@0.4.6-next.2
+  - @backstage/plugin-permission-common@0.8.3-next.0
+  - @backstage/plugin-permission-node@0.8.6-next.2
+  - @backstage/plugin-search-backend-module-catalog@0.2.6-next.2
+
 ## 1.29.0-next.2
 
 ### Minor Changes

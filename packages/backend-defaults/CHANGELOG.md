@@ -1,5 +1,35 @@
 # @backstage/backend-defaults
 
+## 0.6.0-next.3
+
+### Minor Changes
+
+- 29180ec: **BREAKING PRODUCERS**: The `LifecycleMiddlewareOptions.startupRequestPauseTimeout` has been removed. Use the `backend.lifecycle.startupRequestPauseTimeout` setting in your `app-config.yaml` file to customize how the `createLifecycleMiddleware` function should behave. Also the root config service is required as an option when calling the `createLifecycleMiddleware` function:
+
+  ```diff
+  - createLifecycleMiddleware({ lifecycle, startupRequestPauseTimeout })
+  + createLifecycleMiddleware({ config,  lifecycle })
+  ```
+
+### Patch Changes
+
+- 29180ec: Fix server response time by moving the lifecycle startup hooks back to the plugin lifecycle service.
+- Updated dependencies
+  - @backstage/backend-app-api@1.1.0-next.2
+  - @backstage/backend-dev-utils@0.1.5
+  - @backstage/backend-plugin-api@1.1.0-next.2
+  - @backstage/cli-common@0.1.15
+  - @backstage/cli-node@0.2.11-next.1
+  - @backstage/config@1.3.1-next.0
+  - @backstage/config-loader@1.9.3-next.1
+  - @backstage/errors@1.2.6-next.0
+  - @backstage/integration@1.16.0-next.1
+  - @backstage/integration-aws-node@0.1.14-next.0
+  - @backstage/types@1.2.0
+  - @backstage/plugin-auth-node@0.5.5-next.2
+  - @backstage/plugin-events-node@0.4.6-next.2
+  - @backstage/plugin-permission-node@0.8.6-next.2
+
 ## 0.6.0-next.2
 
 ### Minor Changes

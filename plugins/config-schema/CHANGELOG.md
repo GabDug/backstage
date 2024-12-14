@@ -1,5 +1,16 @@
 # @backstage/plugin-config-schema
 
+## 0.1.63-next.3
+
+### Patch Changes
+
+- c36bd35: Internal refactor to break potential circular imports
+- Updated dependencies
+  - @backstage/core-components@0.16.2-next.2
+  - @backstage/core-plugin-api@1.10.2-next.0
+  - @backstage/errors@1.2.6-next.0
+  - @backstage/types@1.2.0
+
 ## 0.1.63-next.2
 
 ### Patch Changes
