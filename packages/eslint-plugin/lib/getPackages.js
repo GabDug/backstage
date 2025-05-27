@@ -45,9 +45,8 @@ module.exports = (function () {
   /** @returns {PackageMap | undefined} */
   return function getPackages(/** @type {string} */ dir) {
     if (result) {
-      // Cache for 30s
-      // Good balance between too much package scanning and the need to reload the ESLint server in local development
-      if (Date.now() - lastLoadAt > 30000) {
+      // Only cache for 5 seconds, to avoid the need to reload ESLint servers
+      if (Date.now() - lastLoadAt > 5000) {
         result = undefined;
       } else {
         return result;
