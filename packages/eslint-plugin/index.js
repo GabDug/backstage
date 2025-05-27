@@ -13,18 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+const pkg = require('./package.json');
 
-module.exports = {
-  configs: {
-    recommended: {
-      plugins: ['@backstage'],
-      rules: {
-        '@backstage/no-forbidden-package-imports': 'error',
-        '@backstage/no-relative-monorepo-imports': 'error',
-        '@backstage/no-undeclared-imports': 'error',
-      },
-    },
+/** @type {import('eslint').ESLint.Plugin} */
+const plugin = {
+  meta: {
+    name: pkg.name,
+    version: pkg.version,
   },
+  configs: {},
   rules: {
     'no-forbidden-package-imports': require('./rules/no-forbidden-package-imports'),
     'no-relative-monorepo-imports': require('./rules/no-relative-monorepo-imports'),
@@ -32,3 +29,33 @@ module.exports = {
     'no-top-level-material-ui-4-imports': require('./rules/no-top-level-material-ui-4-imports'),
   },
 };
+
+/** @type {import('eslint').ESLint.Plugin['rules']} */
+const recommendedRules = {
+  '@backstage/no-forbidden-package-imports': 'error',
+  '@backstage/no-relative-monorepo-imports': 'error',
+  '@backstage/no-undeclared-imports': 'error',
+  '@backstage/no-top-level-material-ui-4-imports': 'error',
+};
+
+// Assign configs here so we can reference `plugin` for flat config
+// cf https://eslint.org/docs/v8.x/extend/plugin-migration-flat-config#migrating-configs-for-flat-config
+Object.assign(plugin.configs, {
+  // Flat config format (ESLint v8.24+ / v9+)
+  // If flat config is enabled, this will be automatically used when `recommended` is loaded
+  // cf https://eslint.org/docs/latest/extend/plugins#backwards-compatibility-for-legacy-configs
+  'flat/recommended': {
+    plugins: {
+      '@backstage': plugin,
+    },
+    rules: recommendedRules,
+  },
+
+  // Legacy config format (ESLint v8 and earlier)
+  recommended: {
+    plugins: ['@backstage'],
+    rules: recommendedRules,
+  },
+});
+
+module.exports = plugin;
