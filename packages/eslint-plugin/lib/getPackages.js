@@ -54,14 +54,14 @@ module.exports = (function () {
     }
 
     const packages = manypkg.getPackagesSync(dir);
-    if (!packages || !packages?.rootPackage) {
+    if (!packages) {
       return undefined;
     }
 
     result = {
       map: new Map(packages.packages.map(pkg => [pkg.packageJson.name, pkg])),
       list: packages.packages,
-      root: packages.rootPackage,
+      root: packages.root,
       byPath(filePath) {
         return packages.packages.find(
           pkg => !path.relative(pkg.dir, filePath).startsWith('..'),
