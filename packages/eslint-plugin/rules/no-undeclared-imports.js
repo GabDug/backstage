@@ -17,7 +17,7 @@
 // @ts-check
 
 const path = require('path');
-const getPackageMap = require('../lib/getWorkspacePackages');
+const getPackageMap = require('../lib/getPackages');
 const visitImports = require('../lib/visitImports');
 const minimatch = require('minimatch');
 const { execFileSync } = require('child_process');
@@ -157,8 +157,8 @@ function addVersionQuery(name, flag, packages) {
 /**
  * Add missing package imports
  * @param {Array<{name: string, flag: string, node: import('estree').Node}>} toAdd
- * @param {import('../lib/getWorkspacePackages').PackageMap} packages
- * @param {import('../lib/getWorkspacePackages').ExtendedPackage} localPkg
+ * @param {import('../lib/getPackages').PackageMap} packages
+ * @param {import('../lib/getPackages').ExtendedPackage} localPkg
  */
 function addMissingImports(toAdd, packages, localPkg) {
   /** @type Record<string, Set<string>> */
@@ -195,8 +195,8 @@ function addMissingImports(toAdd, packages, localPkg) {
 
 /**
  * Removes dependency entries pointing to inlined workspace packages.
- * @param {Array<{pkg: import('../lib/getWorkspacePackages').ExtendedPackage, node: import('estree').Node}>} toInline
- * @param {import('../lib/getWorkspacePackages').ExtendedPackage} localPkg
+ * @param {Array<{pkg: import('../lib/getPackages').ExtendedPackage, node: import('estree').Node}>} toInline
+ * @param {import('../lib/getPackages').ExtendedPackage} localPkg
  */
 function removeInlineImports(toInline, localPkg) {
   /** @type Set<string> */
@@ -220,8 +220,8 @@ function removeInlineImports(toInline, localPkg) {
 
 /**
  * Adds dependencies that are not properly forwarded from inline dependencies.
- * @param {Array<{pkg: import('../lib/getWorkspacePackages').ExtendedPackage, node: import('estree').Node}>} toInline
- * @param {import('../lib/getWorkspacePackages').ExtendedPackage} localPkg
+ * @param {Array<{pkg: import('../lib/getPackages').ExtendedPackage, node: import('estree').Node}>} toInline
+ * @param {import('../lib/getPackages').ExtendedPackage} localPkg
  */
 function addForwardedInlineImports(toInline, localPkg) {
   const declaredProdDeps = new Set([
@@ -309,7 +309,7 @@ module.exports = {
     /** @type Array<{name: string, flag: string, node: import('estree').Node}> */
     const importsToAdd = [];
 
-    /** @type Array<{pkg: import('../lib/getWorkspacePackages').ExtendedPackage, node: import('estree').Node}> */
+    /** @type Array<{pkg: import('../lib/getPackages').ExtendedPackage, node: import('estree').Node}> */
     const importsToInline = [];
 
     return {
@@ -319,6 +319,7 @@ module.exports = {
         if (importsToAdd.length > 0) {
           addMissingImports(importsToAdd, packages, localPkg);
 
+          packages.clearCache();
           // This switches all import directives back to the original import.
           for (const added of importsToAdd) {
             context.report({
@@ -336,6 +337,7 @@ module.exports = {
           removeInlineImports(importsToInline, localPkg);
           addForwardedInlineImports(importsToInline, localPkg);
 
+          packages.clearCache();
           for (const inlined of importsToInline) {
             context.report({
               node: inlined.node,
@@ -350,8 +352,6 @@ module.exports = {
           }
           importsToInline.length = 0;
         }
-
-        packages.clearCache();
       },
       ...visitImports(context, (node, imp) => {
         // We leave checking of type imports to the repo-tools check,

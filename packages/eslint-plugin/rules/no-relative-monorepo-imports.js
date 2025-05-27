@@ -18,7 +18,7 @@
 
 const path = require('path');
 const visitImports = require('../lib/visitImports');
-const getPackageMap = require('../lib/getWorkspacePackages');
+const getPackageMap = require('../lib/getPackages');
 
 /** @type {import('eslint').Rule.RuleModule} */
 module.exports = {

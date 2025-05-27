@@ -17,7 +17,7 @@
 // @ts-check
 
 const { builtinModules } = require('module');
-const getWorkspacePackages = require('./getWorkspacePackages');
+const getPackages = require('./getPackages');
 
 /**
  * @typedef LocalImport
@@ -44,7 +44,7 @@ const getWorkspacePackages = require('./getWorkspacePackages');
  * @property {'value' | 'type'} kind
  * @property {import('estree').Node} node
  * @property {string} path
- * @property {import('./getWorkspacePackages').ExtendedPackage} package
+ * @property {import('./getPackages').ExtendedPackage} package
  * @property {string} packageName
  */
 
@@ -121,7 +121,7 @@ function getImportInfo(node) {
  * @param {ImportVisitor} visitor
  */
 module.exports = function visitImports(context, visitor) {
-  const packages = getWorkspacePackages(context.getCwd());
+  const packages = getPackages(context.getCwd());
   if (!packages) {
     return;
   }
