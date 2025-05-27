@@ -17,7 +17,6 @@
 // @ts-check
 
 const path = require('path');
-const fs = require('fs');
 const manypkg = require('@manypkg/get-packages');
 
 /**
@@ -46,18 +45,17 @@ module.exports = (function () {
   /** @returns {PackageMap | undefined} */
   return function getPackages(/** @type {string} */ dir) {
     if (result) {
-      // Only cache for 10 seconds, to avoid the need to reload ESLint servers
-      if (Date.now() - lastLoadAt > 10000) {
+      // Cache for 30s
+      // Good balance between too much package scanning and the need to reload the ESLint server in local development
+      if (Date.now() - lastLoadAt > 30000) {
         result = undefined;
       } else {
         return result;
       }
     }
 
-    // Let manypkg find the root for us - it's designed for this!
-    console.log('dir', dir);
     const packages = manypkg.getPackagesSync(dir);
-    if (!packages || !packages.rootPackage) {
+    if (!packages || !packages?.rootPackage) {
       return undefined;
     }
 
@@ -65,13 +63,12 @@ module.exports = (function () {
       map: new Map(packages.packages.map(pkg => [pkg.packageJson.name, pkg])),
       list: packages.packages,
       root: packages.rootPackage,
-      byPath(/** @type {string} */ filePath) {
+      byPath(filePath) {
         return packages.packages.find(
           pkg => !path.relative(pkg.dir, filePath).startsWith('..'),
         );
       },
       clearCache() {
-        console.log('clearCache');
         result = undefined;
       },
     };
