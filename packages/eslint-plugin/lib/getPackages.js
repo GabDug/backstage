@@ -18,6 +18,7 @@
 
 const path = require('path');
 const manypkg = require('@manypkg/get-packages');
+const { detectExecutionEnvironment } = require('./detectExecutionEnvironment');
 
 /**
  * @typedef ExtendedPackage
@@ -42,11 +43,29 @@ module.exports = (function () {
   /** @type {number} */
   let lastLoadAt = 0;
 
+  // Detect execution environment once
+  const execEnv = detectExecutionEnvironment();
+
+  // Determine cache expiration based on environment
+  const getCacheExpirationMs = () => {
+    if (execEnv.isLongRunning) {
+      // For LSP servers and other long-running processes, use 5-second cache
+      // to avoid the need to reload ESLint servers while keeping data fresh
+      return 5_000;
+    } else {
+      // For CLI and CI environments, set a long cache expiration since processes are short-lived
+      // This avoids unnecessary cache invalidation during quick lint runs
+      return 30 * 60 * 1000; // 30 minutes
+    }
+  };
+
+  const cacheExpirationMs = getCacheExpirationMs();
+
   /** @returns {PackageMap | undefined} */
   return function getPackages(/** @type {string} */ dir) {
     if (result) {
-      // Only cache for 5 seconds, to avoid the need to reload ESLint servers
-      if (Date.now() - lastLoadAt > 5000) {
+      // Apply environment-specific cache expiration
+      if (Date.now() - lastLoadAt > cacheExpirationMs) {
         result = undefined;
       } else {
         return result;

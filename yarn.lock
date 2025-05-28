@@ -4494,6 +4494,7 @@ __metadata:
     "@backstage/cli": "workspace:^"
     "@manypkg/get-packages": "npm:^1.1.3"
     "@types/estree": "npm:^1.0.5"
+    ci-info: "npm:^4.0.0"
     eslint: "npm:^8.33.0"
     minimatch: "npm:^9.0.0"
   languageName: unknown
@@ -25278,9 +25279,9 @@ __metadata:
   linkType: hard
 
 "ci-info@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "ci-info@npm:4.0.0"
-  checksum: 10/c983bb7ff1b06648f4a47432201abbd58291147d8ab5043dbb5c03e1a0e3fb2347f40d29b66a3044f28ffeb5dade01ac35aa6bd4e7464a44d9a49a3d7532415a
+  version: 4.2.0
+  resolution: "ci-info@npm:4.2.0"
+  checksum: 10/928d8457f3476ffc4a66dec93b9cdf1944d5e60dba69fbd6a0fc95b652386f6ef64857f6e32372533210ef6d8954634af2c7693d7c07778ee015f3629a5e0dd9
   languageName: node
   linkType: hard
 
