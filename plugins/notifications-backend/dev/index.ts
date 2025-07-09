@@ -18,14 +18,21 @@ import { createBackend } from '@backstage/backend-defaults';
 import {
   coreServices,
   createBackendPlugin,
+  createBackendModule,
 } from '@backstage/backend-plugin-api';
-import { notificationService } from '@backstage/plugin-notifications-node';
+import {
+  notificationService,
+  NotificationsProcessingExtensionPoint,
+  notificationsProcessingExtensionPoint,
+} from '@backstage/plugin-notifications-node';
 import {
   notificationSeverities,
   NotificationSeverity,
 } from '@backstage/plugin-notifications-common';
 import express, { Response } from 'express';
 import Router from 'express-promise-router';
+import { NotificationProcessor } from '@backstage/plugin-notifications-node';
+import { Notification } from '@backstage/plugin-notifications-common';
 
 const randomSeverity = (): NotificationSeverity => {
   return notificationSeverities[
@@ -69,6 +76,25 @@ const randomLink = (): string | undefined => {
   ];
 };
 
+class MyNotificationProcessor implements NotificationProcessor {
+  getName(): string {
+    return 'Custom Notification Processor';
+  }
+  // preProcess is called before the notification is saved to database.
+  // This is a good place to modify the notification before it is saved and sent to the user.
+  async preProcess(notification: Notification): Promise<Notification> {
+    if (notification.origin === 'plugin-my-plugin') {
+      notification.payload.icon = 'my-icon';
+    }
+    return notification;
+  }
+
+  // postProcess is called after the notification is saved to database and the signal is emitted.
+  // This is a good place to send the notification to external services.
+  async postProcess(_notification: Notification): Promise<void> {
+    // Dummy
+  }
+}
 const notificationsDebug = createBackendPlugin({
   pluginId: 'notifications-debug',
   register(env) {
@@ -106,6 +132,25 @@ const notificationsDebug = createBackendPlugin({
   },
 });
 
+const notificationsDebug2 = createBackendModule({
+  pluginId: 'notifications',
+  moduleId: 'debug2',
+  register(reg) {
+    reg.registerInit({
+      deps: {
+        notificationsProcessing: notificationsProcessingExtensionPoint,
+      },
+      async init({
+        notificationsProcessing,
+      }: {
+        notificationsProcessing: NotificationsProcessingExtensionPoint;
+      }) {
+        notificationsProcessing.addProcessor(new MyNotificationProcessor());
+      },
+    });
+  },
+});
+
 const backend = createBackend();
 backend.add(import('@backstage/plugin-events-backend'));
 backend.add(import('@backstage/plugin-signals-backend'));
@@ -113,5 +158,5 @@ backend.add(import('@backstage/plugin-auth-backend'));
 backend.add(import('@backstage/plugin-auth-backend-module-guest-provider'));
 backend.add(import('../src'));
 backend.add(notificationsDebug);
-
+backend.add(notificationsDebug2);
 backend.start();
