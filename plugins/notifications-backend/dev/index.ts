@@ -18,14 +18,21 @@ import { createBackend } from '@backstage/backend-defaults';
 import {
   coreServices,
   createBackendPlugin,
+  createBackendModule,
 } from '@backstage/backend-plugin-api';
-import { notificationService } from '@backstage/plugin-notifications-node';
+import {
+  notificationService,
+  NotificationsProcessingExtensionPoint,
+  notificationsProcessingExtensionPoint,
+} from '@backstage/plugin-notifications-node';
 import {
   notificationSeverities,
   NotificationSeverity,
 } from '@backstage/plugin-notifications-common';
 import express, { Response } from 'express';
 import Router from 'express-promise-router';
+import { NotificationProcessor } from '@backstage/plugin-notifications-node';
+import { Notification } from '@backstage/plugin-notifications-common';
 
 const randomSeverity = (): NotificationSeverity => {
   return notificationSeverities[
@@ -69,6 +76,17 @@ const randomLink = (): string | undefined => {
   ];
 };
 
+class CustomTargetNotificationProcessor implements NotificationProcessor {
+  getName(): string {
+    return 'Custom Target';
+  }
+  async preProcess(notification: Notification): Promise<Notification> {
+    return notification;
+  }
+  async postProcess(notification: Notification): Promise<void> {
+    console.log('postProcess', notification);
+  }
+}
 const notificationsDebug = createBackendPlugin({
   pluginId: 'notifications-debug',
   register(env) {
@@ -83,7 +101,8 @@ const notificationsDebug = createBackendPlugin({
         router.post('/', async (_, res: Response<unknown>) => {
           await notifications.send({
             recipients: {
-              type: 'broadcast',
+              type: 'entity',
+              entityRef: 'user:development/guest',
             },
             payload: {
               title: randomTitle(),
@@ -106,6 +125,27 @@ const notificationsDebug = createBackendPlugin({
   },
 });
 
+const notificationsDebugTarget = createBackendModule({
+  pluginId: 'notifications',
+  moduleId: 'debug-target',
+  register(reg) {
+    reg.registerInit({
+      deps: {
+        notificationsProcessing: notificationsProcessingExtensionPoint,
+      },
+      async init({
+        notificationsProcessing,
+      }: {
+        notificationsProcessing: NotificationsProcessingExtensionPoint;
+      }) {
+        notificationsProcessing.addProcessor(
+          new CustomTargetNotificationProcessor(),
+        );
+      },
+    });
+  },
+});
+
 const backend = createBackend();
 backend.add(import('@backstage/plugin-events-backend'));
 backend.add(import('@backstage/plugin-signals-backend'));
@@ -113,5 +153,5 @@ backend.add(import('@backstage/plugin-auth-backend'));
 backend.add(import('@backstage/plugin-auth-backend-module-guest-provider'));
 backend.add(import('../src'));
 backend.add(notificationsDebug);
-
+backend.add(notificationsDebugTarget);
 backend.start();

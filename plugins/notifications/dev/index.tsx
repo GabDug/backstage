@@ -22,6 +22,16 @@ import {
 import { signalsPlugin } from '@backstage/plugin-signals';
 import { SidebarItem } from '@backstage/core-components';
 import AddAlert from '@material-ui/icons/AddAlert';
+import {
+  SettingsLayout,
+  UserSettingsPage,
+  userSettingsPlugin,
+} from '@backstage/plugin-user-settings';
+import { CatalogApi, catalogApiRef } from '@backstage/plugin-catalog-react';
+import { CompoundEntityRef, Entity } from '@backstage/catalog-model';
+import { CatalogEntityPage } from '@backstage/plugin-catalog';
+
+import { UserNotificationSettingsCard } from '@backstage/plugin-notifications';
 
 createDevApp()
   .registerPlugin(notificationsPlugin)
@@ -47,4 +57,35 @@ createDevApp()
       }}
     />,
   )
+  .registerPlugin(userSettingsPlugin)
+  .registerApi({
+    api: catalogApiRef,
+    deps: {},
+    factory() {
+      return {
+        async getEntityByRef(
+          _: string | CompoundEntityRef,
+        ): Promise<Entity | undefined> {
+          return {
+            apiVersion: 'backstage.io/v1beta1',
+            kind: 'User',
+            metadata: {
+              name: 'guest',
+            },
+          };
+        },
+      } as Partial<CatalogApi> as unknown as CatalogApi;
+    },
+  })
+  .addPage({
+    title: 'Settings',
+    path: '/settings',
+    element: <UserSettingsPage />,
+    children: (
+      <SettingsLayout.Route path="/notifications" title="Notifications">
+        <UserNotificationSettingsCard />
+      </SettingsLayout.Route>
+    ),
+  })
+  .addPage({ element: <CatalogEntityPage /> })
   .render();
