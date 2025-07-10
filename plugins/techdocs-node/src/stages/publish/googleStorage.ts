@@ -28,7 +28,7 @@ import path from 'node:path';
 import { Readable } from 'node:stream';
 import {
   getFileTreeRecursively,
-  getHeadersForFileExtension,
+  getHeadersForFilename,
   isValidContentPath,
   lowerCaseEntityTriplet,
   lowerCaseEntityTripletInStoragePath,
@@ -36,6 +36,7 @@ import {
   getCloudPathForLocalPath,
   getStaleFiles,
   normalizeExternalStorageRootPath,
+  readHashedCssCacheControlMaxAgeSeconds,
 } from './helpers';
 import { MigrateWriteStream } from './migrations';
 import {
@@ -53,6 +54,7 @@ export class GoogleGCSPublish implements PublisherBase {
   private readonly legacyPathCasing: boolean;
   private readonly logger: LoggerService;
   private readonly bucketRootPath: string;
+  private readonly hashedCssCacheControlMaxAgeSeconds: number;
 
   constructor(options: {
     storageClient: Storage;
@@ -60,12 +62,15 @@ export class GoogleGCSPublish implements PublisherBase {
     legacyPathCasing: boolean;
     logger: LoggerService;
     bucketRootPath: string;
+    hashedCssCacheControlMaxAgeSeconds: number;
   }) {
     this.storageClient = options.storageClient;
     this.bucketName = options.bucketName;
     this.legacyPathCasing = options.legacyPathCasing;
     this.logger = options.logger;
     this.bucketRootPath = options.bucketRootPath;
+    this.hashedCssCacheControlMaxAgeSeconds =
+      options.hashedCssCacheControlMaxAgeSeconds;
   }
 
   static fromConfig(
@@ -131,6 +136,8 @@ export class GoogleGCSPublish implements PublisherBase {
       legacyPathCasing,
       logger,
       bucketRootPath,
+      hashedCssCacheControlMaxAgeSeconds:
+        readHashedCssCacheControlMaxAgeSeconds(config),
     });
   }
 
@@ -317,8 +324,10 @@ export class GoogleGCSPublish implements PublisherBase {
       }
 
       // Files with different extensions (CSS, HTML) need to be served with different headers
-      const fileExtension = path.extname(filePath);
-      const responseHeaders = getHeadersForFileExtension(fileExtension);
+      const responseHeaders = getHeadersForFilename(
+        filePath,
+        this.hashedCssCacheControlMaxAgeSeconds,
+      );
 
       // Pipe file chunks directly from storage to client.
       this.storageClient

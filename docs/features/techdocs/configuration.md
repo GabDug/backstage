@@ -527,6 +527,16 @@ techdocs:
     ttl: 3600000
 ```
 
+    # (Optional) Escape hatch: cache TTL for hashed minified CSS assets (e.g. main.<hash>.min.css).
+    # This is rarely needed, but can help if you post-process CSS without changing the filename hash.
+    #
+    # cacheControl:
+    #   # Defaults to 1 year. Set to 0 to disable.
+    #   # Supports duration formats supported by @backstage/config (e.g. 'P30D', 'PT1H', 3600000).
+    #   hashedCssTtl: 0
+
+    # Optional when techdocs.publisher.type is set to 'local'.
+
 ### Read Timeout
 
 `techdocs.cache.readTimeout`

@@ -40,8 +40,9 @@ import {
 } from './types';
 import {
   getFileTreeRecursively,
-  getHeadersForFileExtension,
+  getHeadersForFilename,
   lowerCaseEntityTripletInStoragePath,
+  readHashedCssCacheControlMaxAgeSeconds,
 } from './helpers';
 import { ForwardedError } from '@backstage/errors';
 
@@ -55,17 +56,21 @@ export class LocalPublish implements PublisherBase {
   private readonly logger: LoggerService;
   private readonly discovery: DiscoveryService;
   private readonly staticDocsDir: string;
+  private readonly hashedCssCacheControlMaxAgeSeconds: number;
 
   constructor(options: {
     logger: LoggerService;
     discovery: DiscoveryService;
     legacyPathCasing: boolean;
     staticDocsDir: string;
+    hashedCssCacheControlMaxAgeSeconds: number;
   }) {
     this.logger = options.logger;
     this.discovery = options.discovery;
     this.legacyPathCasing = options.legacyPathCasing;
     this.staticDocsDir = options.staticDocsDir;
+    this.hashedCssCacheControlMaxAgeSeconds =
+      options.hashedCssCacheControlMaxAgeSeconds;
   }
 
   static fromConfig(
@@ -100,6 +105,8 @@ export class LocalPublish implements PublisherBase {
       discovery,
       legacyPathCasing,
       staticDocsDir,
+      hashedCssCacheControlMaxAgeSeconds:
+        readHashedCssCacheControlMaxAgeSeconds(config),
     });
   }
 
@@ -232,8 +239,10 @@ export class LocalPublish implements PublisherBase {
       express.static(this.staticDocsDir, {
         // Handle content-type header the same as all other publishers.
         setHeaders: (res, filePath) => {
-          const fileExtension = path.extname(filePath);
-          const headers = getHeadersForFileExtension(fileExtension);
+          const headers = getHeadersForFilename(
+            filePath,
+            this.hashedCssCacheControlMaxAgeSeconds,
+          );
           for (const [header, value] of Object.entries(headers)) {
             res.setHeader(header, value);
           }

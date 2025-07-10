@@ -25,15 +25,16 @@ import { assertError, ForwardedError } from '@backstage/errors';
 import express from 'express';
 import JSON5 from 'json5';
 import limiterFactory from 'p-limit';
-import { default as path, default as platformPath } from 'node:path';
+import { default as path } from 'node:path';
 import {
   bulkStorageOperation,
   getCloudPathForLocalPath,
   getFileTreeRecursively,
-  getHeadersForFileExtension,
+  getHeadersForFilename,
   lowerCaseEntityTriplet,
   getStaleFiles,
   lowerCaseEntityTripletInStoragePath,
+  readHashedCssCacheControlMaxAgeSeconds,
 } from './helpers';
 import {
   PublisherBase,
@@ -52,17 +53,21 @@ export class AzureBlobStoragePublish implements PublisherBase {
   private readonly containerName: string;
   private readonly legacyPathCasing: boolean;
   private readonly logger: LoggerService;
+  private readonly hashedCssCacheControlMaxAgeSeconds: number;
 
   constructor(options: {
     storageClient: BlobServiceClient;
     containerName: string;
     legacyPathCasing: boolean;
     logger: LoggerService;
+    hashedCssCacheControlMaxAgeSeconds: number;
   }) {
     this.storageClient = options.storageClient;
     this.containerName = options.containerName;
     this.legacyPathCasing = options.legacyPathCasing;
     this.logger = options.logger;
+    this.hashedCssCacheControlMaxAgeSeconds =
+      options.hashedCssCacheControlMaxAgeSeconds;
   }
 
   static fromConfig(config: Config, logger: LoggerService): PublisherBase {
@@ -131,6 +136,8 @@ export class AzureBlobStoragePublish implements PublisherBase {
       containerName: containerName,
       legacyPathCasing: legacyPathCasing,
       logger: logger,
+      hashedCssCacheControlMaxAgeSeconds:
+        readHashedCssCacheControlMaxAgeSeconds(config),
     });
   }
 
@@ -349,8 +356,10 @@ export class AzureBlobStoragePublish implements PublisherBase {
         : lowerCaseEntityTripletInStoragePath(decodedUri);
 
       // Files with different extensions (CSS, HTML) need to be served with different headers
-      const fileExtension = platformPath.extname(filePath);
-      const responseHeaders = getHeadersForFileExtension(fileExtension);
+      const responseHeaders = getHeadersForFilename(
+        filePath,
+        this.hashedCssCacheControlMaxAgeSeconds,
+      );
 
       const blobClient = this.storageClient
         .getContainerClient(this.containerName)

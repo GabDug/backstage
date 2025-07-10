@@ -26,8 +26,9 @@ import { Stream, Readable } from 'node:stream';
 
 import {
   getFileTreeRecursively,
-  getHeadersForFileExtension,
+  getHeadersForFilename,
   lowerCaseEntityTripletInStoragePath,
+  readHashedCssCacheControlMaxAgeSeconds,
 } from './helpers';
 import {
   PublisherBase,
@@ -63,15 +64,19 @@ export class OpenStackSwiftPublish implements PublisherBase {
   private readonly storageClient: SwiftClient;
   private readonly containerName: string;
   private readonly logger: LoggerService;
+  private readonly hashedCssCacheControlMaxAgeSeconds: number;
 
   constructor(options: {
     storageClient: SwiftClient;
     containerName: string;
     logger: LoggerService;
+    hashedCssCacheControlMaxAgeSeconds: number;
   }) {
     this.storageClient = options.storageClient;
     this.containerName = options.containerName;
     this.logger = options.logger;
+    this.hashedCssCacheControlMaxAgeSeconds =
+      options.hashedCssCacheControlMaxAgeSeconds;
   }
 
   static fromConfig(config: Config, logger: LoggerService): PublisherBase {
@@ -98,7 +103,13 @@ export class OpenStackSwiftPublish implements PublisherBase {
       secret: openStackSwiftConfig.getString('credentials.secret'),
     });
 
-    return new OpenStackSwiftPublish({ storageClient, containerName, logger });
+    return new OpenStackSwiftPublish({
+      storageClient,
+      containerName,
+      logger,
+      hashedCssCacheControlMaxAgeSeconds:
+        readHashedCssCacheControlMaxAgeSeconds(config),
+    });
   }
 
   /*
@@ -243,8 +254,10 @@ export class OpenStackSwiftPublish implements PublisherBase {
       const filePath = decodeURI(req.path.replace(/^\//, ''));
 
       // Files with different extensions (CSS, HTML) need to be served with different headers
-      const fileExtension = path.extname(filePath);
-      const responseHeaders = getHeadersForFileExtension(fileExtension);
+      const responseHeaders = getHeadersForFilename(
+        filePath,
+        this.hashedCssCacheControlMaxAgeSeconds,
+      );
 
       const downloadResponse = await this.storageClient.download(
         this.containerName,

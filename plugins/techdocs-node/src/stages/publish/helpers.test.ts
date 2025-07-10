@@ -19,6 +19,7 @@ import {
   getFileTreeRecursively,
   getCloudPathForLocalPath,
   getHeadersForFileExtension,
+  getHeadersForFilename,
   bulkStorageOperation,
   lowerCaseEntityTriplet,
   lowerCaseEntityTripletInStoragePath,
@@ -53,6 +54,82 @@ describe('getHeadersForFileExtension', () => {
       expect(headers['Content-Type'].toLowerCase()).toBe(expectedContentType);
     },
   );
+});
+
+describe('getHeadersForFilename', () => {
+  const correctMapOfFilenames = [
+    ['index.html', 'text/plain; charset=utf-8'],
+    ['styles.css', 'text/css; charset=utf-8'],
+    ['image.png', 'image/png'],
+    ['data.json', 'application/json; charset=utf-8'],
+    ['script.js', 'application/javascript; charset=utf-8'],
+  ];
+
+  test.each(correctMapOfFilenames)(
+    'check content-type for %s filename',
+    (filename, expectedContentType) => {
+      const headers = getHeadersForFilename(filename);
+      expect(headers).toHaveProperty('Content-Type');
+      expect(headers['Content-Type'].toLowerCase()).toBe(expectedContentType);
+    },
+  );
+
+  describe('cache control headers', () => {
+    it('should add cache control header for hashed minified CSS files', () => {
+      const headers = getHeadersForFilename('main.8608ea7d.min.css');
+      expect(headers).toHaveProperty('Cache-Control');
+      expect(headers['Cache-Control']).toBe(
+        'public, max-age=31536000, immutable',
+      );
+    });
+
+    it('should add cache control header for hashed CSS files with different hash', () => {
+      const headers = getHeadersForFilename('styles.a1b2c3d4.min.css');
+      expect(headers).toHaveProperty('Cache-Control');
+      expect(headers['Cache-Control']).toBe(
+        'public, max-age=31536000, immutable',
+      );
+    });
+
+    it('should not add cache control header for regular CSS files', () => {
+      const headers = getHeadersForFilename('main.css');
+      expect(headers).not.toHaveProperty('Cache-Control');
+    });
+
+    it('should not add cache control header for non-CSS files', () => {
+      const headers = getHeadersForFilename('index.html');
+      expect(headers).not.toHaveProperty('Cache-Control');
+    });
+
+    it('should not add cache control header for CSS files with wrong hash length', () => {
+      const headers = getHeadersForFilename('main.1234567.min.css');
+      expect(headers).not.toHaveProperty('Cache-Control');
+    });
+
+    it('should not add cache control header for CSS files with invalid hash characters', () => {
+      const headers = getHeadersForFilename('main.1234567g.min.css');
+      expect(headers).not.toHaveProperty('Cache-Control');
+    });
+
+    it('should handle filenames with paths', () => {
+      const headers = getHeadersForFilename('assets/css/main.8608ea7d.min.css');
+      expect(headers).toHaveProperty('Cache-Control');
+      expect(headers['Cache-Control']).toBe(
+        'public, max-age=31536000, immutable',
+      );
+    });
+
+    it('should allow overriding max-age for hashed CSS files', () => {
+      const headers = getHeadersForFilename('main.8608ea7d.min.css', 60);
+      expect(headers).toHaveProperty('Cache-Control');
+      expect(headers['Cache-Control']).toBe('public, max-age=60, immutable');
+    });
+
+    it('should allow disabling cache control for hashed CSS files', () => {
+      const headers = getHeadersForFilename('main.8608ea7d.min.css', 0);
+      expect(headers).not.toHaveProperty('Cache-Control');
+    });
+  });
 });
 
 describe('getFileTreeRecursively', () => {
@@ -202,7 +279,8 @@ describe('getCloudPathForLocalPath', () => {
   });
 
   it('should throw error when entity is invalid', () => {
-    expect(() => getCloudPathForLocalPath({} as Entity)).toThrow();
+    // @ts-expect-error - invalid entity
+    expect(() => getCloudPathForLocalPath({})).toThrow();
   });
 
   it('should prepend root directory to destination', () => {
@@ -278,7 +356,7 @@ describe('bulkStorageOperation', () => {
   };
 
   it('should take care of rate limit by default', async () => {
-    const operation = createConcurrentRequestCounter((count: number) => {
+    const operation = createConcurrentRequestCounter(count => {
       expect(count <= 25).toBeTruthy();
     });
     await bulkStorageOperation(operation, args);
@@ -286,7 +364,7 @@ describe('bulkStorageOperation', () => {
 
   it('should accept the number of concurrency limit', async () => {
     const concurrencyLimit = 10;
-    const operation = createConcurrentRequestCounter((count: number) => {
+    const operation = createConcurrentRequestCounter(count => {
       expect(count <= concurrencyLimit).toBeTruthy();
     });
     await bulkStorageOperation(operation, args, { concurrencyLimit });

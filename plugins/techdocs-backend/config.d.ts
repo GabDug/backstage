@@ -75,6 +75,17 @@ export interface Config {
           type: 'local';
 
           /**
+           * (Optional) Cache-Control settings applied when serving static assets.
+           */
+          cacheControl?: {
+            /**
+             * (Optional) TTL (max-age) for hashed minified CSS assets (e.g. main.<hash>.min.css).
+             * Defaults to 1 year. Set to 0 to disable.
+             */
+            hashedCssTtl?: number | HumanDuration | string;
+          };
+
+          /**
            *  Optional when 'type' is set to local
            */
           local?: {
@@ -86,6 +97,17 @@ export interface Config {
         }
       | {
           type: 'awsS3';
+
+          /**
+           * (Optional) Cache-Control settings applied when serving static assets.
+           */
+          cacheControl?: {
+            /**
+             * (Optional) TTL (max-age) for hashed minified CSS assets (e.g. main.<hash>.min.css).
+             * Defaults to 1 year. Set to 0 to disable.
+             */
+            hashedCssTtl?: number | HumanDuration | string;
+          };
 
           /**
            * Required when 'type' is set to awsS3
@@ -168,6 +190,17 @@ export interface Config {
           type: 'openStackSwift';
 
           /**
+           * (Optional) Cache-Control settings applied when serving static assets.
+           */
+          cacheControl?: {
+            /**
+             * (Optional) TTL (max-age) for hashed minified CSS assets (e.g. main.<hash>.min.css).
+             * Defaults to 1 year. Set to 0 to disable.
+             */
+            hashedCssTtl?: number | HumanDuration | string;
+          };
+
+          /**
            * Required when 'type' is set to openStackSwift
            */
           openStackSwift?: {
@@ -206,6 +239,17 @@ export interface Config {
           type: 'azureBlobStorage';
 
           /**
+           * (Optional) Cache-Control settings applied when serving static assets.
+           */
+          cacheControl?: {
+            /**
+             * (Optional) TTL (max-age) for hashed minified CSS assets (e.g. main.<hash>.min.css).
+             * Defaults to 1 year. Set to 0 to disable.
+             */
+            hashedCssTtl?: number | HumanDuration | string;
+          };
+
+          /**
            * Required when 'type' is set to azureBlobStorage
            */
           azureBlobStorage?: {
@@ -240,6 +284,17 @@ export interface Config {
         }
       | {
           type: 'googleGcs';
+
+          /**
+           * (Optional) Cache-Control settings applied when serving static assets.
+           */
+          cacheControl?: {
+            /**
+             * (Optional) TTL (max-age) for hashed minified CSS assets (e.g. main.<hash>.min.css).
+             * Defaults to 1 year. Set to 0 to disable.
+             */
+            hashedCssTtl?: number | HumanDuration | string;
+          };
 
           /**
            * Required when 'type' is set to googleGcs

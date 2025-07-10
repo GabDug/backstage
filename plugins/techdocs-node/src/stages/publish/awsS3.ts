@@ -52,7 +52,8 @@ import {
   bulkStorageOperation,
   getCloudPathForLocalPath,
   getFileTreeRecursively,
-  getHeadersForFileExtension,
+  getHeadersForFilename,
+  readHashedCssCacheControlMaxAgeSeconds,
   getStaleFiles,
   isValidContentPath,
   lowerCaseEntityTriplet,
@@ -92,6 +93,7 @@ export class AwsS3Publish implements PublisherBase {
   private readonly bucketRootPath: string;
   private readonly sse?: 'aws:kms' | 'AES256';
   private readonly maxAttempts: number;
+  private readonly hashedCssCacheControlMaxAgeSeconds: number;
 
   constructor(options: {
     storageClient: S3Client;
@@ -101,6 +103,7 @@ export class AwsS3Publish implements PublisherBase {
     bucketRootPath: string;
     sse?: 'aws:kms' | 'AES256';
     maxAttempts: number;
+    hashedCssCacheControlMaxAgeSeconds: number;
   }) {
     this.storageClient = options.storageClient;
     this.bucketName = options.bucketName;
@@ -109,6 +112,8 @@ export class AwsS3Publish implements PublisherBase {
     this.bucketRootPath = options.bucketRootPath;
     this.sse = options.sse;
     this.maxAttempts = options.maxAttempts;
+    this.hashedCssCacheControlMaxAgeSeconds =
+      options.hashedCssCacheControlMaxAgeSeconds;
   }
 
   static async fromConfig(
@@ -218,6 +223,8 @@ export class AwsS3Publish implements PublisherBase {
       logger,
       sse,
       maxAttempts: maxAttempts || 5,
+      hashedCssCacheControlMaxAgeSeconds:
+        readHashedCssCacheControlMaxAgeSeconds(config),
     });
   }
 
@@ -741,8 +748,10 @@ export class AwsS3Publish implements PublisherBase {
       }
 
       // Files with different extensions (CSS, HTML) need to be served with different headers
-      const fileExtension = path.extname(filePath);
-      const responseHeaders = getHeadersForFileExtension(fileExtension);
+      const responseHeaders = getHeadersForFilename(
+        filePath,
+        this.hashedCssCacheControlMaxAgeSeconds,
+      );
 
       try {
         const resp = await this.storageClient.send(

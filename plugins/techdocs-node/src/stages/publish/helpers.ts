@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 import { Entity, DEFAULT_NAMESPACE } from '@backstage/catalog-model';
+import { Config, readDurationFromConfig } from '@backstage/config';
+import { durationToMilliseconds } from '@backstage/types';
 import mime from 'mime-types';
 import path from 'node:path';
 import createLimiter from 'p-limit';
 import recursiveReadDir from 'recursive-readdir';
+
+const DEFAULT_HASHED_CSS_CACHE_CONTROL_MAX_AGE_SECONDS = 31536000;
 
 /**
  * Helper to get the expected content-type for a given file extension. Also
@@ -62,21 +66,101 @@ const getContentTypeForExtension = (ext: string): string => {
   return mime.contentType(ext) || defaultContentType;
 };
 
+/**
+ * Helper to get the expected cache control for a given filename.
+ *
+ * Very conservative, only allow caching for hashed CSS files.
+ * Matches mkdocs-material's pattern: *.{8hex}.min.css (e.g., main.8608ea7d.min.css)
+ */
+const getCacheControlForFilename = (
+  filename: string,
+  maxAgeSeconds: number,
+): string | undefined => {
+  // Match pattern: *.{8hex}.min.css (e.g., main.8608ea7d.min.css or assets/css/main.8608ea7d.min.css)
+  if (!/^[^.]*\.[a-f0-9]{8}\.min\.css$/i.test(filename)) {
+    return undefined;
+  }
+
+  // Allow users to opt out (or reduce TTL to something minimal) if they do any
+  // post-processing after generation but before publish.
+  if (maxAgeSeconds <= 0) {
+    return undefined;
+  }
+
+  return `public, max-age=${maxAgeSeconds}, immutable`;
+};
+
 export type responseHeadersType = {
   'Content-Type': string;
+  'Cache-Control'?: string;
+};
+
+/**
+ * Reads the configured max-age for Cache-Control headers for hashed CSS assets.
+ *
+ * Global setting:
+ * - techdocs.publisher.cacheControl.hashedCssTtl
+ *
+ * Returns the max-age in seconds. If not configured, returns the default (1 year).
+ * If configured to 0 (or negative), returns 0 to disable caching.
+ */
+export function readHashedCssCacheControlMaxAgeSeconds(config: Config): number {
+  const key = 'techdocs.publisher.cacheControl.hashedCssTtl';
+  if (!config.has(key)) {
+    return DEFAULT_HASHED_CSS_CACHE_CONTROL_MAX_AGE_SECONDS;
+  }
+
+  const duration = readDurationFromConfig(config, { key });
+  const ms = durationToMilliseconds(duration);
+  const seconds = Math.round(ms / 1000);
+  return Math.max(0, seconds);
+}
+
+/**
+ * Some files need special headers to be used correctly by the frontend. This function
+ * generates headers in the response to those file requests.
+ *
+ * It may be used to set the cache control for the file.
+ * @param fileExtension - .html, .css, .js, .png etc.
+ * @deprecated Use getHeadersForFilename instead, as this function only receives the extension and cannot properly determine cache headers for hashed files.
+ */
+export const getHeadersForFileExtension = (
+  fileExtension: string,
+): responseHeadersType => {
+  const headers: responseHeadersType = {
+    'Content-Type': getContentTypeForExtension(fileExtension),
+  };
+
+  return headers;
 };
 
 /**
  * Some files need special headers to be used correctly by the frontend. This function
  * generates headers in the response to those file requests.
- * @param fileExtension - .html, .css, .js, .png etc.
+ *
+ * It may be used to set the cache control for the file.
+ * @param filename - The full filename or path (e.g., 'main.8608ea7d.min.css', 'index.html', 'styles.css')
+ * @param hashedCssCacheControlMaxAgeSeconds - Cache-Control max-age (in seconds) for hashed minified CSS assets.
+ * Defaults to 1 year if not provided. If set to 0, no cache header is added.
  */
-export const getHeadersForFileExtension = (
-  fileExtension: string,
+export const getHeadersForFilename = (
+  filename: string,
+  hashedCssCacheControlMaxAgeSeconds: number = DEFAULT_HASHED_CSS_CACHE_CONTROL_MAX_AGE_SECONDS,
 ): responseHeadersType => {
-  return {
+  const fileExtension = path.extname(filename);
+  const headers: responseHeadersType = {
     'Content-Type': getContentTypeForExtension(fileExtension),
   };
+
+  const cacheControl = getCacheControlForFilename(
+    filename,
+    hashedCssCacheControlMaxAgeSeconds,
+  );
+  if (cacheControl) {
+    headers['Cache-Control'] = cacheControl;
+  }
+
+  return headers;
 };
 
 /**
