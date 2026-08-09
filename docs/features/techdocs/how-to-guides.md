@@ -191,6 +191,27 @@ app:
 For more advanced customization of the reader page, you can override the page
 extension. See the [extension overrides](../../frontend-system/architecture/25-extension-overrides.md) documentation for details.
 
+### Reader layout width
+
+On large screens, TechDocs keeps the navigation, article, and table of contents
+in a centered column (matching MkDocs Material's default `.md-grid` width of
+`61rem`) so the TOC stays next to the text. To widen or stretch the reader,
+set the `--techdocs-layout-max-width` CSS custom property on a light-DOM
+ancestor such as `:root` or `.techdocs-reader-page` (custom properties inherit
+into the TechDocs shadow root):
+
+```css
+.techdocs-reader-page {
+  /* Example: Material's documented wider layout */
+  --techdocs-layout-max-width: 1440px;
+}
+
+/* Or stretch to the full content area (previous TechDocs behavior) */
+.techdocs-reader-page {
+  --techdocs-layout-max-width: 100%;
+}
+```
+
 ## How to migrate from TechDocs Alpha to Beta
 
 > This guide only applies to the "recommended" TechDocs deployment method (where

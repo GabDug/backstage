@@ -52,6 +52,34 @@ describe('Transformers > Styles', () => {
     );
   });
 
+  it('should keep the reader column centered with sticky sidebars on desktop', () => {
+    const { result } = renderHook(() => useStylesTransformer());
+
+    const dom = document.createElement('html');
+    dom.innerHTML = '<head></head>';
+    result.current(dom);
+
+    const css = dom.querySelector('head > style')?.textContent ?? '';
+
+    expect(css).toContain('max-width: var(--techdocs-layout-max-width, 61rem)');
+    expect(css).toContain('margin-left: auto');
+    expect(css).toContain('margin-right: auto');
+    expect(css).toContain('display: flex');
+    expect(css).toMatch(
+      /@media screen and \(min-width: 76\.25em\)[\s\S]*position: sticky/,
+    );
+    expect(css).toMatch(
+      /@media screen and \(min-width: 76\.25em\)[\s\S]*height: 0/,
+    );
+    expect(css).toContain('order: 2');
+    expect(css).toContain('flex-grow: 1');
+    expect(css).toContain('min-width: 0');
+    // Viewport-pinned TOC was the ultrawide layout bug; must not return.
+    expect(css).not.toMatch(
+      /\.md-sidebar--secondary\s*\{[^}]*\bright:\s*\d+px/,
+    );
+  });
+
   it('should use headers relative font-size value as the factor for the md-typeset variable', () => {
     const theme = createTheme({
       typography: {

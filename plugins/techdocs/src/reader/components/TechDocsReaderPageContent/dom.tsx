@@ -107,33 +107,39 @@ export const useTechDocsReaderDom = (
     const sidebars = dom.querySelectorAll<HTMLElement>('.md-sidebar');
 
     sidebars.forEach(element => {
-      // set sidebar position to render in correct position
+      const scrollwrap = element.querySelector<HTMLElement>(
+        '.md-sidebar__scrollwrap',
+      );
+
+      // Mobile/tablet: drawer uses position:fixed; pin under the viewport top.
+      // Desktop: position:sticky; `top` clears Backstage chrome + in-docs tabs.
       if (isMobileMedia) {
         element.style.top = '0px';
+        element.style.removeProperty('height');
+        scrollwrap?.style.removeProperty('height');
       } else {
         const page = document?.querySelector('.techdocs-reader-page');
-        const pageTop = page?.getBoundingClientRect().top ?? 0;
-        let domTop = dom.getBoundingClientRect().top ?? 0;
+        const pageTop = Math.max(page?.getBoundingClientRect().top ?? 0, 0);
 
         const tabs = dom.querySelector('.md-container > .md-tabs');
         const tabsHeight = tabs?.getBoundingClientRect().height ?? 0;
 
-        // the sidebars should not scroll beyond the total height of the header and tabs
-        if (domTop < pageTop) {
-          domTop = pageTop;
-        }
-
-        const scrollbarTopPx = Math.max(domTop, 0) + tabsHeight;
-
+        // Sticky offset: sit below the reader page chrome and MkDocs tabs.
+        const scrollbarTopPx = pageTop + tabsHeight;
         element.style.top = `${scrollbarTopPx}px`;
+        // Sidebar itself stays height:0 (Material); size the scroll area only.
+        element.style.removeProperty('height');
 
-        // set scrollbar height to ensure all links can be seen when content is small
         const footer = dom.querySelector('.md-container > .md-footer');
-        // if no footer, fallback to using the bottom of the window
         const scrollbarEndPx =
           footer?.getBoundingClientRect().top ?? window.innerHeight;
 
-        element.style.height = `${scrollbarEndPx - scrollbarTopPx}px`;
+        if (scrollwrap) {
+          scrollwrap.style.height = `${Math.max(
+            scrollbarEndPx - scrollbarTopPx,
+            0,
+          )}px`;
+        }
       }
 
       // show the sidebar only after updating its position

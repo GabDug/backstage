@@ -14,12 +14,40 @@
  * limitations under the License.
  */
 
+import {
+  TECHDOCS_LAYOUT_MAX_WIDTH,
+  TECHDOCS_SIDEBAR_WIDTH,
+} from '../../../constants';
 import { RuleOptions } from './types';
 
-const TECHDOCS_SIDEBAR_WIDTH = '16rem';
 const APP_SIDEBAR_WIDTH_PINNED = '224px';
 const APP_SIDEBAR_WIDTH_COLLAPSED = '72px';
 
+/**
+ * Layout overrides for MkDocs Material rendered inside the TechDocs shadow DOM.
+ *
+ * History / rationale
+ * -------------------
+ * MkDocs Material (see main*.css) keeps nav + article + TOC together with:
+ *   .md-grid { max-width: 61rem; margin-inline: auto }
+ *   .md-main__inner { display: flex }
+ *   .md-sidebar { position: sticky; align-self: flex-start }
+ *   .md-sidebar--secondary { order: 2 }
+ *   .md-content { flex-grow: 1; min-width: 0 }
+ *
+ * TechDocs historically replaced that with viewport-fixed sidebars
+ * (PR #5063, Mar 2021): `position: fixed` + `.md-sidebar--secondary { right }`
+ * and later `.md-grid { max-width: 100% }`. Fixed positioning is relative to the
+ * viewport (shadow roots are not containing blocks), so the TOC pinned to the
+ * window edge while the article stayed left — especially visible on ultrawide
+ * screens. JS still sets `top` / `height` so sidebars clear Backstage chrome
+ * outside the shadow tree.
+ *
+ * Desktop layout below restores Material's sticky + centered flex column while
+ * keeping the drawer behavior on smaller breakpoints and the JS chrome sync.
+ * Adopters can opt back into full-bleed with:
+ *   --techdocs-layout-max-width: 100%;
+ */
 export default ({ theme, sidebar }: RuleOptions) => `
 
 /*==================  Layout  ==================*/
@@ -29,9 +57,14 @@ export default ({ theme, sidebar }: RuleOptions) => `
   color: var(--md-default-fg-color);
 }
 
+/*
+ * Match Material's centered reader column so nav/content/TOC stay a cohesive
+ * group on wide viewports. Override with --techdocs-layout-max-width.
+ */
 .md-grid {
-  max-width: 100%;
-  margin: 0;
+  max-width: var(--techdocs-layout-max-width, ${TECHDOCS_LAYOUT_MAX_WIDTH});
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .md-nav {
@@ -76,17 +109,18 @@ export default ({ theme, sidebar }: RuleOptions) => `
 }
 
 .md-main__inner {
+  display: flex;
   margin-top: 0;
 }
 
 .md-sidebar {
-  bottom: 75px;
-  position: fixed;
   width: ${TECHDOCS_SIDEBAR_WIDTH};
+  flex-shrink: 0;
+  align-self: flex-start;
 }
 .md-sidebar .md-sidebar__scrollwrap {
-  width: calc(${TECHDOCS_SIDEBAR_WIDTH});
-  height: 100%
+  width: ${TECHDOCS_SIDEBAR_WIDTH};
+  height: 100%;
 }
 
 @supports selector(::-webkit-scrollbar) {
@@ -94,13 +128,10 @@ export default ({ theme, sidebar }: RuleOptions) => `
       padding-right: calc(100% - 15.1rem);
   }
 }
-.md-sidebar--secondary {
-  right: ${theme.spacing(3)}px;
-}
 
 .md-content {
-  max-width: calc(100% - ${TECHDOCS_SIDEBAR_WIDTH} * 2);
-  margin-left: ${TECHDOCS_SIDEBAR_WIDTH};
+  flex-grow: 1;
+  min-width: 0;
   margin-bottom: 50px;
 }
 
@@ -129,11 +160,25 @@ export default ({ theme, sidebar }: RuleOptions) => `
   background-color: unset;
 }
 
+/* Desktop: Material-like sticky sidebars inside the centered flex grid */
 @media screen and (min-width: 76.25em) {
   .md-sidebar {
-    height: auto;
+    position: sticky;
+    /* top is set in JS to clear Backstage headers / tabs */
+    bottom: auto;
+    /*
+     * Same height:0 trick as MkDocs Material: keep sticky sidebars out of the
+     * flex height calculation so the article defines page length. JS sizes
+     * .md-sidebar__scrollwrap to the visible viewport instead.
+     */
+    height: 0;
     /* Less padding before the Previous / Next buttons */
     padding-bottom: 0 !important;
+  }
+
+  .md-sidebar--secondary {
+    order: 2;
+    right: auto;
   }
 }
 
@@ -184,6 +229,8 @@ export default ({ theme, sidebar }: RuleOptions) => `
   }
 
   .md-sidebar {
+    position: fixed;
+    bottom: 75px;
     height: 100%;
   }
   .md-sidebar--primary {

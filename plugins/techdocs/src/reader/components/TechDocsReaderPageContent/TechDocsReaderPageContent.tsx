@@ -27,12 +27,17 @@ import { TechDocsStateIndicator } from '../TechDocsStateIndicator';
 import { withTechDocsReaderProvider } from '../TechDocsReaderProvider';
 import { TechDocsReaderPageContentAddons } from './TechDocsReaderPageContentAddons';
 import { useTechDocsReaderContentData } from '../../../hooks/useTechDocsReaderContentData';
+import {
+  TECHDOCS_LAYOUT_MAX_WIDTH,
+  TECHDOCS_SIDEBAR_WIDTH,
+} from '../../constants';
 
 const useStyles = makeStyles({
   search: {
     width: '100%',
     '@media (min-width: 76.1875em)': {
-      width: 'calc(100% - 34.4rem)',
+      // Align with the article column between nav and TOC (same max as .md-grid).
+      maxWidth: `calc(var(--techdocs-layout-max-width, ${TECHDOCS_LAYOUT_MAX_WIDTH}) - ${TECHDOCS_SIDEBAR_WIDTH} * 2)`,
       margin: '0 auto',
     },
     '@media print': {
