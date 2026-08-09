@@ -65,3 +65,14 @@ Never make changes to the release notes in `/docs/releases` unless explicitly as
 ## Repository Structure
 
 See `/docs/contribute/project-structure.md` for a detailed description of the repository structure.
+
+## Cursor Cloud specific instructions
+
+The environment already runs `yarn install` on startup, so dependencies are ready before you begin. Standard dev commands are documented above under "Development Flow"; the notes here only cover non-obvious caveats.
+
+- Running the app: `yarn start` launches both the example frontend (`http://localhost:3000`) and the example backend (`http://localhost:7007`) together. Initial startup takes a couple of minutes while the frontend bundles; wait for `Rspack compiled successfully` (frontend) and `Listening on :7007` (backend) in the output before interacting.
+- No external services are required for local dev: the backend uses an in-memory SQLite database and guest auth, both configured in `app-config.yaml`. Sign in by clicking "Enter" under the Guest provider — no credentials or secrets are needed for the core catalog/scaffolder/search flows.
+- Expected noise on startup: the backend logs a few benign warnings/errors during initial search indexing (e.g. `Failed to explore fetch tools, 404` and TechDocs `search_index.json 404` / `indexer received 0 documents`). These do not indicate a broken environment.
+- TechDocs generation is configured to run in Docker (`techdocs.generator.runIn: docker` in `app-config.yaml`); Docker is not set up here, so building TechDocs locally will not work, but it is not needed for general development.
+- Lint: `yarn lint` only checks files changed since `origin/master`. When there is no diff (or to lint a specific range) use `yarn backstage-cli repo lint --since <ref>`, or `yarn lint:all` for the whole repo.
+- Type checking with `yarn tsc` and `yarn build:api-reports` run across the whole monorepo and are slow/memory-heavy (they set `--max-old-space-size=8192`); prefer running them only when needed before a PR.
