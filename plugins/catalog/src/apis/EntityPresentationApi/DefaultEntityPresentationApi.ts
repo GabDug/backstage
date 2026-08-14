@@ -263,7 +263,7 @@ export class DefaultEntityPresentationApi implements EntityPresentationApi {
     },
   ): EntityRefPresentation {
     const { entityRef, kind, entity, needsLoad } =
-      this.#getEntityForInitialRender(entityOrRef);
+      this.#getEntityForInitialRender(entityOrRef, context);
 
     // Make a wrapping helper for rendering
     const render = (options: {
@@ -360,7 +360,13 @@ export class DefaultEntityPresentationApi implements EntityPresentationApi {
     };
   }
 
-  #getEntityForInitialRender(entityOrRef: Entity | string): {
+  #getEntityForInitialRender(
+    entityOrRef: Entity | string,
+    context?: {
+      defaultKind?: string;
+      defaultNamespace?: string;
+    },
+  ): {
     entity: Entity | undefined;
     kind: string;
     entityRef: string;
@@ -379,19 +385,32 @@ export class DefaultEntityPresentationApi implements EntityPresentationApi {
       };
     }
 
-    const cached = this.#cache.get(entityOrRef);
+    let kind: string;
+    let entityRef = entityOrRef;
+    try {
+      const parsed = parseEntityRef(entityOrRef, context);
+      kind = parsed.kind;
+      entityRef = stringifyEntityRef(parsed);
+    } catch {
+      // Presentation must never throw during render; incomplete refs still
+      // need a usable snapshot (for example shortened owner filter values).
+      kind = 'unknown';
+    }
+
+    const cached = this.#cache.get(entityRef);
     const cachedEntity: Entity | undefined = cached?.entity;
     const cacheNeedsUpdate =
       !cached || Date.now() - cached.updatedAt > this.#cacheTtlMs;
     const needsLoad =
+      kind !== 'unknown' &&
       cacheNeedsUpdate &&
       this.#renderer.async !== false &&
       this.#loader !== undefined;
 
     return {
       entity: cachedEntity,
-      kind: parseEntityRef(entityOrRef).kind,
-      entityRef: entityOrRef,
+      kind,
+      entityRef,
       needsLoad,
     };
   }

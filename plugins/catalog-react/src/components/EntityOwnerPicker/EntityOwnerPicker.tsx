@@ -89,6 +89,23 @@ export type EntityOwnerPickerProps = {
   mode?: 'owners-only' | 'all';
 };
 
+// Catalog owner query params historically omit kind for groups (e.g. "team-a").
+const OWNER_REF_CONTEXT = {
+  defaultKind: 'group',
+  defaultNamespace: 'default',
+};
+
+function toOwnerRef(owner: Entity | string): string {
+  if (typeof owner !== 'string') {
+    return stringifyEntityRef(owner);
+  }
+  try {
+    return stringifyEntityRef(parseEntityRef(owner, OWNER_REF_CONTEXT));
+  } catch {
+    return owner;
+  }
+}
+
 function RenderOptionLabel(props: {
   entity: Entity;
   isSelected: boolean;
@@ -154,8 +171,10 @@ export const EntityOwnerPicker = (props?: EntityOwnerPickerProps) => {
     [ownersParameter],
   );
 
-  const [selectedOwners, setSelectedOwners] = useState<string[]>(
-    queryParamOwners.length ? queryParamOwners : filters.owners?.values ?? [],
+  const [selectedOwners, setSelectedOwners] = useState<string[]>(() =>
+    queryParamOwners.length
+      ? new EntityOwnerFilter(queryParamOwners).values
+      : filters.owners?.values ?? [],
   );
 
   const [{ value, loading }, handleFetch, cache] = useFetchEntities({
@@ -206,27 +225,24 @@ export const EntityOwnerPicker = (props?: EntityOwnerPickerProps) => {
         value={selectedOwners as unknown as Entity[]}
         getOptionSelected={(o, v) => {
           if (typeof v === 'string') {
-            return stringifyEntityRef(o) === v;
+            return stringifyEntityRef(o) === toOwnerRef(v);
           }
           return o === v;
         }}
         getOptionLabel={o => {
           if (mode === 'owners-only') {
-            // Stubs have no title; use string ref so entityPresentationSnapshot hits the API cache.
-            const ref = typeof o === 'string' ? o : stringifyEntityRef(o);
+            // Stubs have no title; use a canonical string ref so the
+            // presentation API can fetch and cache the full entity.
             return entityPresentationSnapshot(
-              ref,
+              toOwnerRef(o),
               undefined,
               entityPresentationApi,
             ).primaryTitle;
           }
           const entity =
             typeof o === 'string'
-              ? cache.getEntity(o) ||
-                parseEntityRef(o, {
-                  defaultKind: 'group',
-                  defaultNamespace: 'default',
-                })
+              ? cache.getEntity(toOwnerRef(o)) ||
+                parseEntityRef(o, OWNER_REF_CONTEXT)
               : o;
           return entityPresentationSnapshot(
             entity,
@@ -238,8 +254,7 @@ export const EntityOwnerPicker = (props?: EntityOwnerPickerProps) => {
           setText('');
           setSelectedOwners(
             owners.map(e => {
-              const entityRef =
-                typeof e === 'string' ? e : stringifyEntityRef(e);
+              const entityRef = toOwnerRef(e);
 
               if (typeof e !== 'string') {
                 cache.setEntity(e);
