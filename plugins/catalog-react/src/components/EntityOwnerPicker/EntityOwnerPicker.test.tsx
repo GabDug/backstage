@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-import {
-  Entity,
-  parseEntityRef,
-  stringifyEntityRef,
-} from '@backstage/catalog-model';
+import { Entity, stringifyEntityRef } from '@backstage/catalog-model';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import {
   MockEntityListContextProvider,
@@ -622,14 +618,11 @@ describe('<EntityOwnerPicker mode="owners-only" />', () => {
   });
 
   it('does not crash when query parameters use shortened owner refs', async () => {
-    // Ownership card links (and older bookmarks) omit kind for groups, e.g.
-    // filters[owners]=team-a&filters[owners]=user:guest. The presentation API
-    // requires a kind when resolving labels for selected chips.
     const mockPresentationApi = {
       forEntity: jest.fn((entityOrRef: Entity | string) => {
         const ref =
           typeof entityOrRef === 'string'
-            ? stringifyEntityRef(parseEntityRef(entityOrRef))
+            ? entityOrRef
             : stringifyEntityRef(entityOrRef);
         const snapshot = { entityRef: ref, primaryTitle: ref };
         return { snapshot, promise: Promise.resolve(snapshot) };

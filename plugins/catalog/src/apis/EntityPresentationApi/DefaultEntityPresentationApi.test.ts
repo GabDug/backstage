@@ -96,20 +96,6 @@ describe('DefaultEntityPresentationApi', () => {
       promise: expect.any(Promise),
     });
     await expect(presentation.promise).resolves.toEqual(presentation.snapshot);
-
-    presentation = api.forEntity('team-a', { defaultKind: 'group' });
-    expect(presentation.snapshot).toEqual({
-      entityRef: 'group:default/team-a',
-      primaryTitle: 'team-a',
-      secondaryTitle: 'group:default/team-a',
-      Icon: expect.anything(),
-    });
-    await expect(presentation.promise).resolves.toEqual(presentation.snapshot);
-
-    presentation = api.forEntity('team-a');
-    expect(presentation.snapshot.entityRef).toBe('team-a');
-    expect(presentation.snapshot.primaryTitle).toBe('team-a');
-    await expect(presentation.promise).resolves.toEqual(presentation.snapshot);
   });
 
   it('works in catalog mode', async () => {

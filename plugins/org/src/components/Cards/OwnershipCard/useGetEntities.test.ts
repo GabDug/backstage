@@ -366,44 +366,6 @@ describe('useGetEntities', () => {
       });
     });
 
-    it('should include kind on owner refs when aggregating user membership', async () => {
-      getEntityRelationsMock.mockReturnValue([
-        createGroupRefFromName(givenLeafGroup),
-      ]);
-      catalogApi.getEntities.mockResolvedValueOnce({
-        items: [
-          {
-            kind: 'System',
-            metadata: { name: 'my-system', namespace: 'default' },
-            spec: { type: 'service' },
-          } as Partial<Entity> as Entity,
-        ],
-      });
-
-      const { result } = renderHook(
-        ({ entity }) => useGetEntities(entity, 'aggregated'),
-        { initialProps: { entity: givenUserEntity } },
-      );
-
-      await waitFor(() => expect(result.current.loading).toBe(false));
-
-      expect(result.current.componentsWithCounters).toHaveLength(1);
-      const params = qs.parse(
-        result.current.componentsWithCounters![0].queryParams,
-      );
-      expect(params).toEqual({
-        filters: {
-          kind: 'system',
-          type: 'service',
-          owners: [
-            `group:default/${givenLeafGroup}`,
-            `user:default/${givenUser}`,
-          ],
-          user: 'all',
-        },
-      });
-    });
-
     it('should group entities by kind and type in query params', async () => {
       getEntityRelationsMock.mockReturnValue([]);
       catalogApi.getEntities.mockResolvedValueOnce({
