@@ -2,4 +2,4 @@
 '@backstage/plugin-catalog-react': patch
 ---
 
-Fixed a crash in the catalog owner filter when the page is opened with shortened owner refs, such as those produced by the ownership card on user and group pages. Names like `team-a` are now treated as groups, matching the existing catalog filter URL format.
+Fixed a crash in the catalog owner filter when the page is opened with shortened owner refs that omit the kind, such as `team-a`. Names like these are now treated as groups. This still supports older bookmarks and links; new ownership card links include the kind.

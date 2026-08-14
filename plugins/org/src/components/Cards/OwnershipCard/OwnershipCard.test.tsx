@@ -288,7 +288,7 @@ describe('OwnershipCard', () => {
     // This env does not support URLSearchParams
     const queryParams = decodeURIComponent(href);
 
-    expect(queryParams).toContain('filters[owners]=my-team');
+    expect(queryParams).toContain('filters[owners]=group:default/my-team');
   });
 
   it('links to the catalog with the user and groups filters from an user profile', async () => {
@@ -310,9 +310,9 @@ describe('OwnershipCard', () => {
     const href = getByText('OPENAPI').closest('a')?.href ?? '';
     // This env does not support URLSearchParams
     const queryParams = decodeURIComponent(href);
-    expect(queryParams).toMatch(
-      /filters\[owners\]=custom\/some\-team.*filters\[owners\]=user:the-user/,
-    );
+    expect(queryParams).toContain('filters[owners]=group:default/my-team');
+    expect(queryParams).toContain('filters[owners]=group:custom/some-team');
+    expect(queryParams).toContain('filters[owners]=user:default/the-user');
   });
 
   describe('OwnershipCard relations', () => {

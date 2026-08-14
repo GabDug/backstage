@@ -46,10 +46,8 @@ const getEntityRelationsMock: jest.Mock<
   [Entity | undefined]
 > = jest.fn();
 jest.mock('@backstage/plugin-catalog-react', () => {
-  const actual = jest.requireActual('@backstage/plugin-catalog-react');
   return {
     catalogApiRef: {},
-    entityPresentationSnapshot: actual.entityPresentationSnapshot,
     getEntityRelations: jest.fn(entity => {
       return getEntityRelationsMock(entity);
     }) as any,
@@ -293,7 +291,7 @@ describe('useGetEntities', () => {
       catalogApi.getEntitiesByRefs.mockRestore();
     });
 
-    it('should produce query params with humanized entity refs as owners', async () => {
+    it('should produce query params with full entity refs as owners', async () => {
       getEntityRelationsMock.mockReturnValue([]);
       catalogApi.getEntities.mockResolvedValueOnce({
         items: [
@@ -320,7 +318,7 @@ describe('useGetEntities', () => {
         filters: {
           kind: 'component',
           type: 'service',
-          owners: givenLeafGroup,
+          owners: `group:default/${givenLeafGroup}`,
           user: 'all',
         },
       });
@@ -359,7 +357,48 @@ describe('useGetEntities', () => {
         filters: {
           kind: 'api',
           type: 'openapi',
-          owners: expect.arrayContaining([givenLeafGroup, givenParentGroup]),
+          owners: expect.arrayContaining([
+            `group:default/${givenLeafGroup}`,
+            `group:default/${givenParentGroup}`,
+          ]),
+          user: 'all',
+        },
+      });
+    });
+
+    it('should include kind on owner refs when aggregating user membership', async () => {
+      getEntityRelationsMock.mockReturnValue([
+        createGroupRefFromName(givenLeafGroup),
+      ]);
+      catalogApi.getEntities.mockResolvedValueOnce({
+        items: [
+          {
+            kind: 'System',
+            metadata: { name: 'my-system', namespace: 'default' },
+            spec: { type: 'service' },
+          } as Partial<Entity> as Entity,
+        ],
+      });
+
+      const { result } = renderHook(
+        ({ entity }) => useGetEntities(entity, 'aggregated'),
+        { initialProps: { entity: givenUserEntity } },
+      );
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(result.current.componentsWithCounters).toHaveLength(1);
+      const params = qs.parse(
+        result.current.componentsWithCounters![0].queryParams,
+      );
+      expect(params).toEqual({
+        filters: {
+          kind: 'system',
+          type: 'service',
+          owners: [
+            `group:default/${givenLeafGroup}`,
+            `user:default/${givenUser}`,
+          ],
           user: 'all',
         },
       });
